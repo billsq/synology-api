@@ -3,7 +3,7 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 
 class Authentication:
-    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2):
+    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2, did=None):
         self._ip_address = ip_address
         self._port = port
         self._username = username
@@ -12,11 +12,23 @@ class Authentication:
         self._session_expire = True
         self._verify = cert_verify
         self._version = dsm_version
+        self._did = did
         if self._verify is False:
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
         schema = 'https' if secure else 'http'
         self._base_url = '%s://%s:%s/webapi/' % (schema, self._ip_address, self._port)
 
+        # Version
+        param = {
+            "api": "SYNO.API.Info",
+            "version": "1",
+            "method": "query",
+            "query": "SYNO.API.Auth"
+        }
+        query_request = requests.get(self._base_url + "query.cgi", param, verify=self._verify)
+        self._version = query_request.json()['data']['SYNO.API.Auth']['maxVersion']
+        print("API version {}".format(self._version))
         self.full_api_list = {}
         self.app_api_list = {}
 
@@ -24,16 +36,29 @@ class Authentication:
         return self._verify
 
     def login(self, application):
-        login_api = 'auth.cgi?api=SYNO.API.Auth'
-        param = {'version': self._version, 'method': 'login', 'account': self._username,
-                 'passwd': self._password, 'session': application, 'format': 'cookie'}
+        login_api = 'auth.cgi'#?enable_syno_token=yes'
+        param = {
+            'api': 'SYNO.API.Auth',
+            'version': self._version,
+            'method': 'login',
+            'account': self._username,
+            'passwd': self._password,
+            'session': application,
+            #'enable_syno_token': 'yes'
+        }
 
         if not self._session_expire:
             if self._sid is not None:
                 self._session_expire = False
                 return 'User already logged'
         else:
-            session_request = requests.get(self._base_url + login_api, param, verify=self._verify)
+            if self._did:
+                print("MFA login")
+                headers = {"Cookie": "did={}".format(self._did)}
+                session_request = requests.post(self._base_url + login_api, param, headers=headers, verify=self._verify)
+            else:
+                session_request = requests.post(self._base_url + login_api, param, verify=self._verify)
+            print(session_request.json())
             self._sid = session_request.json()['data']['sid']
             self._session_expire = False
             return 'User logging... New session started!'
@@ -106,7 +131,7 @@ class Authentication:
 
         req_param['_sid'] = self._sid
 
-        if method is 'get':
+        if method == 'get':
             url = ('%s%s' % (self._base_url, api_path)) + '?api=' + api_name
             response = requests.get(url, req_param, verify=self._verify)
 
@@ -115,7 +140,7 @@ class Authentication:
             else:
                 return response
 
-        elif method is 'post':
+        elif method == 'post':
             url = ('%s%s' % (self._base_url, api_path)) + '?api=' + api_name
             response = requests.post(url, req_param, verify=self._verify)
 

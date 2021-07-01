@@ -3,9 +3,9 @@ from . import auth as syn
 
 class Virtualization:
 
-    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2):
+    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2, did=None):
 
-        self.session = syn.Authentication(ip_address, port, username, password, secure, cert_verify, dsm_version)
+        self.session = syn.Authentication(ip_address, port, username, password, secure, cert_verify, dsm_version, did)
 
         self.request_data = self.session.request_data
 

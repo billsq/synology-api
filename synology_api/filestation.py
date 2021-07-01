@@ -11,9 +11,9 @@ from . import auth as syn
 
 class FileStation:
 
-    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2):
+    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2, did=None):
 
-        self.session = syn.Authentication(ip_address, port, username, password, secure, cert_verify, dsm_version)
+        self.session = syn.Authentication(ip_address, port, username, password, secure, cert_verify, dsm_version, did)
 
         self._dir_taskid = ''
         self._dir_taskid_list = []
@@ -221,7 +221,7 @@ class FileStation:
         api_path = info['path']
         req_param = {'version': info['maxVersion'], 'method': 'stop', 'taskid': ''}
 
-        assert len(self._search_taskid_list) is not 0, 'Task list is empty' + str(self._search_taskid_list)
+        assert len(self._search_taskid_list) != 0, 'Task list is empty' + str(self._search_taskid_list)
 
         for task_id in self._search_taskid_list:
             req_param['taskid'] = task_id
@@ -405,7 +405,7 @@ class FileStation:
         api_path = info['path']
         req_param = {'version': info['maxVersion'], 'method': 'status', 'taskid': taskid}
 
-        if taskid is None and self._dir_taskid is not '':
+        if taskid is None and self._dir_taskid != '':
             return 'Choose a taskid from this list: ' + str(self._dir_taskid)
 
         return self.request_data(api_name, api_path, req_param)
@@ -432,7 +432,7 @@ class FileStation:
         api_path = info['path']
         req_param = {'version': info['maxVersion'], 'method': 'status'}
 
-        if taskid is None and self._md5_calc_taskid is not '':
+        if taskid is None and self._md5_calc_taskid != '':
             req_param['taskid'] = '"{taskid}"'.format(taskid=self._md5_calc_taskid)
         elif taskid is not None:
             req_param['taskid'] = '"{taskid}"'.format(taskid=taskid)
@@ -498,7 +498,7 @@ class FileStation:
 
             r = session.post(url, data=args, files=files, verify=verify)
 
-            if r.status_code is 200 and r.json()['success']:
+            if r.status_code == 200 and r.json()['success']:
                 return 'Upload Complete'
             else:
                 return r.status_code, r.json()

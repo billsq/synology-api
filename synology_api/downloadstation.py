@@ -3,9 +3,9 @@ from . import auth as syn
 
 class DownloadStation:
 
-    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2):
+    def __init__(self, ip_address, port, username, password, secure=False, cert_verify=False, dsm_version=2, did=None):
 
-        self.session = syn.Authentication(ip_address, port, username, password, secure, cert_verify, dsm_version)
+        self.session = syn.Authentication(ip_address, port, username, password, secure, cert_verify, dsm_version, did)
         self._bt_search_id = ''
         self._bt_search_id_list = []
         self.session.login('DownloadStation')
